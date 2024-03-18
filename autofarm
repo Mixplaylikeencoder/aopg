@@ -1,0 +1,90 @@
+ local autofarmnps = true
+ local autofarmThread = nil
+ 
+ local TweenService = game:GetService("TweenService")
+ 
+ local function GetHuman()
+     local h = game.Players.LocalPlayer.Character
+     h = h and (h:FindFirstChild("Humanoid") or h:FindFirstChildWhichIsA("Humanoid"))
+     return h or game.Workspace.CurrentCamera.CameraSubject
+ end
+ 
+ local function GetDistance(Endpoint)
+     local localPosition = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+     local endpointPosition = typeof(Endpoint) == "Instance" and Endpoint.Position or Endpoint
+     print("Calculating distance...")
+     return (endpointPosition - localPosition).Magnitude
+ end
+ 
+ function Tween(Endpoint)
+     local endpointPosition = typeof(Endpoint) == "Instance" and Endpoint.Position or Endpoint
+     local distance = GetDistance(endpointPosition)
+     local tweenSpeed = 100
+     
+     local playerPosition = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+     local targetPosition = endpointPosition + Vector3.new(0, 10, 0)
+ 
+     local tweenInfo = TweenInfo.new(distance / tweenSpeed, Enum.EasingStyle.Linear)
+     local tween = TweenService:Create(game.Players.LocalPlayer.Character.HumanoidRootPart, tweenInfo, {CFrame = CFrame.new(targetPosition)})
+     tween:Play()
+     
+     if distance <= 100 then
+         game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(endpointPosition)
+         print("Reached destination.")
+         return false
+     end
+     
+     print("Tweening to destination...")
+     return tween
+ end
+ 
+ local function TweenToNPC(npc)
+     local endpointPosition = npc.HumanoidRootPart.Position
+     local distance = GetDistance(endpointPosition)
+     local tweenSpeed = 100
+     
+     local playerPosition = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+     local targetPosition = endpointPosition + Vector3.new(0, 10, 0)
+ 
+     local tweenInfo = TweenInfo.new(distance / tweenSpeed, Enum.EasingStyle.Linear)
+     local tween = TweenService:Create(game.Players.LocalPlayer.Character.HumanoidRootPart, tweenInfo, {CFrame = CFrame.new(targetPosition)})
+     tween:Play()
+     print("Tweening to NPC...")
+ end
+ 
+ local function AutoFarmNPCs()
+     print("NPC farming is enabled.")
+     while autofarmnps do
+         game:GetService("Workspace").Entities.ChildAdded:Wait()
+         print("Child added to Entities.")
+         local child = game:GetService("Workspace").Entities:FindFirstChild("Weak CP9 Member")
+         if child then
+             TweenToNPC(child)
+         end
+     end
+     print("NPC farming is disabled.")
+ end
+ 
+ -- Функция для изменения переменной autofarmnps и перезапуска автофарма
+ local function ToggleAutoFarm()
+     autofarmnps = not autofarmnps
+     print("NPC farming is now " .. (autofarmnps and "on" or "off") .. ".")
+     if autofarmnps then
+         if autofarmThread == nil then
+             autofarmThread = spawn(AutoFarmNPCs)
+         end
+     else
+         if autofarmThread ~= nil then
+             autofarmThread:Destroy()
+             autofarmThread = nil
+         end
+     end
+ end
+ 
+ -- Запуск функции ToggleAutoFarm при нажатии на клавишу 't'
+ print("Press 't' to toggle NPC farming on/off.")
+ game:GetService("UserInputService").InputBegan:Connect(function(input)
+     if input.KeyCode == Enum.KeyCode.T then
+         ToggleAutoFarm()
+     end
+ end)
